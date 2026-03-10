@@ -44,6 +44,8 @@ export type ServiceOrderLog = {
   message: string
 }
 
+export type GeneratorStatus = 'operational' | 'needs_service' | 'out_of_commission'
+
 export type Generator = {
   id: number
   serial_number: string
@@ -53,7 +55,20 @@ export type Generator = {
   location: string
   install_date: string
   last_serviced: string | null
-  status: 'operational' | 'needs_service' | 'out_of_service'
+  status: GeneratorStatus
+}
+
+export type ServiceOrderSummary = {
+  id: number
+  status: ServiceOrderStatus
+  assigned_tech: string | null
+  problem_description: string
+  created_at: string
+  updated_at: string
+}
+
+export type GeneratorDetail = Generator & {
+  service_orders: ServiceOrderSummary[]
 }
 
 export type Part = {

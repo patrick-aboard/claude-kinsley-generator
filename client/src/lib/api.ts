@@ -1,5 +1,6 @@
 import type {
   Generator,
+  GeneratorDetail,
   Part,
   PartsRequest,
   ServiceOrder,
@@ -117,10 +118,20 @@ export async function fetchParts(search?: string): Promise<Part[]> {
 
 // ── Generators ────────────────────────────────────────────────────────────
 
-export async function fetchGenerators(search?: string): Promise<Generator[]> {
+export async function fetchGenerators(params?: {
+  search?: string
+  status?: string
+}): Promise<Generator[]> {
   const url = new URL(`${BASE}/generators`, window.location.origin)
-  if (search) url.searchParams.set('search', search)
+  if (params?.search) url.searchParams.set('search', params.search)
+  if (params?.status) url.searchParams.set('status', params.status)
   const res = await fetch(url.toString())
+  if (!res.ok) throw new Error(`HTTP ${res.status}`)
+  return res.json()
+}
+
+export async function fetchGeneratorDetail(id: number): Promise<GeneratorDetail> {
+  const res = await fetch(`${BASE}/generators/${id}`)
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   return res.json()
 }
