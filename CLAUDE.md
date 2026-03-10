@@ -21,10 +21,10 @@ Demo CRM for Kinsley, a fictional industrial generator repair business. Vertical
 bun run dev
 
 # Server only (port 3001)
-bun --cwd server run dev        # or: cd server && bun run dev
+cd server && bun run dev
 
 # Client only (port 5173)
-bun --cwd client run dev        # or: cd client && bun run dev
+cd client && bun run dev
 
 # Install dependencies after pulling
 bun install && bun install --cwd client && bun install --cwd server

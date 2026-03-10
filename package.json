@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "scripts": {
-    "dev": "bunx concurrently -k -n \"server,client\" -c \"blue,green\" \"bun --cwd server run dev\" \"bun --cwd client run dev\""
+    "dev": "bunx concurrently -k -n \"server,client\" -c \"blue,green\" \"cd server && bun run dev\" \"cd client && bun run dev\""
   },
   "devDependencies": {
     "concurrently": "^9.0.1"
