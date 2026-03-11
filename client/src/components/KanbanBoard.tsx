@@ -28,9 +28,9 @@ import {
 
 const VALID_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
   open:        ['assigned'],
-  assigned:    ['in_progress'],
-  in_progress: ['completed'],
-  completed:   [],
+  assigned:    ['in_progress', 'open'],
+  in_progress: ['completed', 'assigned', 'open'],
+  completed:   ['in_progress'],
 }
 
 const COLUMNS: { id: ServiceOrderStatus; label: string }[] = [
@@ -117,8 +117,25 @@ export default function KanbanBoard({ orders, onOrderUpdated }: KanbanBoardProps
       toast.error(
         order.status === 'open'
           ? 'Assign a technician first'
-          : 'Orders must move forward one step at a time'
+          : order.status === 'completed'
+          ? 'Move to In Progress first — completed orders can only be reopened one step at a time'
+          : 'Orders must move one step at a time'
       )
+      return
+    }
+
+    if (toStatus === 'open') {
+      try {
+        await updateServiceOrder(orderId, { status: 'open', assigned_tech: null })
+        onOrderUpdated()
+        toast.success(
+          order.assigned_tech
+            ? `Moved to Open — ${order.assigned_tech} unassigned`
+            : 'Moved to Open'
+        )
+      } catch {
+        toast.error('Failed to update status')
+      }
       return
     }
 

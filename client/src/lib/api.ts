@@ -48,7 +48,7 @@ export async function createServiceOrder(data: {
 
 export async function updateServiceOrder(
   id: number,
-  data: { status?: string; assigned_tech?: string }
+  data: { status?: string; assigned_tech?: string | null }
 ): Promise<ServiceOrder> {
   const res = await fetch(`${BASE}/service-orders/${id}`, {
     method: 'PATCH',
