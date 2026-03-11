@@ -109,28 +109,10 @@ export default function ServiceOrdersDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Service Orders</h1>
-        <div className="flex items-center gap-2">
-          <Button
-            size="icon-sm"
-            variant={view === 'table' ? 'secondary' : 'ghost'}
-            onClick={() => toggleView('table')}
-            aria-label="Table view"
-          >
-            <LayoutListIcon className="size-3.5" />
-          </Button>
-          <Button
-            size="icon-sm"
-            variant={view === 'kanban' ? 'secondary' : 'ghost'}
-            onClick={() => toggleView('kanban')}
-            aria-label="Kanban view"
-          >
-            <Columns3Icon className="size-3.5" />
-          </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)}>
-            <PlusIcon className="size-3.5" />
-            New Service Order
-          </Button>
-        </div>
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <PlusIcon className="size-3.5" />
+          New Service Order
+        </Button>
       </div>
 
       {/* Filters */}
@@ -149,7 +131,23 @@ export default function ServiceOrdersDashboard() {
             </TabsList>
           </Tabs>
         )}
-        <div className={view === 'kanban' ? '' : 'relative ml-auto'}>
+        <div className="flex items-center gap-2 ml-auto">
+          <Button
+            size="icon-sm"
+            variant={view === 'table' ? 'secondary' : 'ghost'}
+            onClick={() => toggleView('table')}
+            aria-label="Table view"
+          >
+            <LayoutListIcon className="size-3.5" />
+          </Button>
+          <Button
+            size="icon-sm"
+            variant={view === 'kanban' ? 'secondary' : 'ghost'}
+            onClick={() => toggleView('kanban')}
+            aria-label="Kanban view"
+          >
+            <Columns3Icon className="size-3.5" />
+          </Button>
           <div className="relative">
             <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
             <Input
