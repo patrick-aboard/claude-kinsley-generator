@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { PlusIcon, SearchIcon } from 'lucide-react'
+import { PlusIcon, SearchIcon, LayoutListIcon, Columns3Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { fetchServiceOrders } from '@/lib/api'
 import type { ServiceOrder, ServiceOrderStatus } from '@/lib/types'
@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import NewServiceOrderDialog from '@/components/NewServiceOrderDialog'
+import KanbanBoard from '@/components/KanbanBoard'
 
 const STATUS_TABS = [
   { value: 'all', label: 'All' },
@@ -58,6 +59,14 @@ export default function ServiceOrdersDashboard() {
   const [activeTab, setActiveTab] = useState<TabValue>('all')
   const [search, setSearch] = useState('')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [view, setView] = useState<'table' | 'kanban'>(() =>
+    (localStorage.getItem('kinsley-so-view') as 'table' | 'kanban') ?? 'table'
+  )
+
+  function toggleView(next: 'table' | 'kanban') {
+    setView(next)
+    localStorage.setItem('kinsley-so-view', next)
+  }
 
   const load = () => {
     fetchServiceOrders()
@@ -100,112 +109,138 @@ export default function ServiceOrdersDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Service Orders</h1>
-        <Button size="sm" onClick={() => setDialogOpen(true)}>
-          <PlusIcon className="size-3.5" />
-          New Service Order
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="icon-sm"
+            variant={view === 'table' ? 'secondary' : 'ghost'}
+            onClick={() => toggleView('table')}
+            aria-label="Table view"
+          >
+            <LayoutListIcon className="size-3.5" />
+          </Button>
+          <Button
+            size="icon-sm"
+            variant={view === 'kanban' ? 'secondary' : 'ghost'}
+            onClick={() => toggleView('kanban')}
+            aria-label="Kanban view"
+          >
+            <Columns3Icon className="size-3.5" />
+          </Button>
+          <Button size="sm" onClick={() => setDialogOpen(true)}>
+            <PlusIcon className="size-3.5" />
+            New Service Order
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabValue)}>
-          <TabsList>
-            {STATUS_TABS.map(tab => (
-              <TabsTrigger key={tab.value} value={tab.value}>
-                {tab.label}
-                <span className="ml-1 tabular-nums opacity-50 text-[11px]">
-                  {counts[tab.value] ?? 0}
-                </span>
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-        <div className="relative ml-auto">
-          <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
-          <Input
-            className="pl-8 h-7 w-56 text-sm"
-            placeholder="Search orders..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        {view === 'table' && (
+          <Tabs value={activeTab} onValueChange={v => setActiveTab(v as TabValue)}>
+            <TabsList>
+              {STATUS_TABS.map(tab => (
+                <TabsTrigger key={tab.value} value={tab.value}>
+                  {tab.label}
+                  <span className="ml-1 tabular-nums opacity-50 text-[11px]">
+                    {counts[tab.value] ?? 0}
+                  </span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        )}
+        <div className={view === 'kanban' ? '' : 'relative ml-auto'}>
+          <div className="relative">
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              className="pl-8 h-7 w-56 text-sm"
+              placeholder="Search orders..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="rounded-lg border">
-        <Table className="table-fixed">
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-32">Status</TableHead>
-              <TableHead>Generator</TableHead>
-              <TableHead>Problem</TableHead>
-              <TableHead>Technician</TableHead>
-              <TableHead className="w-32">Created</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+      {/* Table / Kanban */}
+      {view === 'table' ? (
+        <div className="rounded-lg border">
+          <Table className="table-fixed">
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground py-10"
-                >
-                  Loading...
-                </TableCell>
+                <TableHead className="w-32">Status</TableHead>
+                <TableHead>Generator</TableHead>
+                <TableHead>Problem</TableHead>
+                <TableHead>Technician</TableHead>
+                <TableHead className="w-32">Created</TableHead>
               </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center text-muted-foreground py-10"
-                >
-                  No service orders found.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map(order => {
-                const badge = STATUS_BADGE[order.status]
-                return (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer"
-                    onClick={() => navigate(`/service-orders/${order.id}`)}
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground py-10"
                   >
-                    <TableCell>
-                      <Badge variant="outline" className={badge.className}>
-                        {badge.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-sm">
-                        {order.serial_number}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {order.client_name}
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-xs">
-                      <span className="text-sm line-clamp-1 block">
-                        {order.problem_description}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {order.assigned_tech ?? (
-                        <span className="text-muted-foreground">Unassigned</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {formatDistanceToNow(new Date(order.created_at), {
-                        addSuffix: true,
-                      })}
-                    </TableCell>
-                  </TableRow>
-                )
-              })
-            )}
-          </TableBody>
-        </Table>
-      </div>
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={5}
+                    className="text-center text-muted-foreground py-10"
+                  >
+                    No service orders found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map(order => {
+                  const badge = STATUS_BADGE[order.status]
+                  return (
+                    <TableRow
+                      key={order.id}
+                      className="cursor-pointer"
+                      onClick={() => navigate(`/service-orders/${order.id}`)}
+                    >
+                      <TableCell>
+                        <Badge variant="outline" className={badge.className}>
+                          {badge.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium text-sm">
+                          {order.serial_number}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {order.client_name}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-xs">
+                        <span className="text-sm line-clamp-1 block">
+                          {order.problem_description}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {order.assigned_tech ?? (
+                          <span className="text-muted-foreground">Unassigned</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDistanceToNow(new Date(order.created_at), {
+                          addSuffix: true,
+                        })}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <KanbanBoard orders={filtered} onOrderUpdated={load} />
+      )}
 
       <NewServiceOrderDialog
         open={dialogOpen}
