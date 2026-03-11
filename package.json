@@ -1,0 +1,12 @@
+{
+  "name": "kinsley-generator",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "bunx concurrently -k -n \"server,client\" -c \"blue,green\" \"cd server && bun run dev\" \"cd client && bun run dev\"",
+    "build": "bun install --cwd server && bun install --cwd client && bun run --cwd client build"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules
+client/dist
+server/kinsley.db
+server/kinsley.db-shm
+server/kinsley.db-wal
