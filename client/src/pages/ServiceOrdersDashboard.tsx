@@ -133,7 +133,7 @@ export default function ServiceOrdersDashboard() {
 
       {/* Table */}
       <div className="rounded-lg border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead className="w-32">Status</TableHead>

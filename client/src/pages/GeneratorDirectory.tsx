@@ -112,7 +112,7 @@ function GeneratorDetailPanel({ generatorId }: { generatorId: number }) {
                   <Badge variant="outline" className={badge.className}>
                     {badge.label}
                   </Badge>
-                  <span className="flex-1 truncate text-muted-foreground">
+                  <span className="flex-1 text-wrap text-muted-foreground">
                     {order.problem_description}
                   </span>
                   <span className="text-xs text-muted-foreground shrink-0">
@@ -218,7 +218,7 @@ export default function GeneratorDirectory() {
 
       {/* Table */}
       <div className="rounded-lg border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead className="w-8" />

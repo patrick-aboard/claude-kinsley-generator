@@ -97,7 +97,7 @@ export default function PartsInventory() {
 
       {/* Table */}
       <div className="rounded-lg border">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead className="w-36">Part #</TableHead>
