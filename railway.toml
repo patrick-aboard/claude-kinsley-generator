@@ -1,8 +1,4 @@
-[build]
-buildCommand = "bun run build"
-
 [deploy]
-startCommand = "cd server && bun run start"
 healthcheckPath = "/api/generators"
 healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
