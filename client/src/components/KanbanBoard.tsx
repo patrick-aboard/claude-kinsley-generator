@@ -29,7 +29,8 @@ import {
 const VALID_TRANSITIONS: Record<ServiceOrderStatus, ServiceOrderStatus[]> = {
   open:        ['assigned'],
   assigned:    ['in_progress', 'open'],
-  in_progress: ['completed', 'assigned', 'open'],
+  in_progress: ['in_review', 'assigned', 'open'],
+  in_review:   ['completed', 'in_progress'],
   completed:   ['in_progress'],
 }
 
@@ -37,6 +38,7 @@ const COLUMNS: { id: ServiceOrderStatus; label: string }[] = [
   { id: 'open', label: 'Open' },
   { id: 'assigned', label: 'Assigned' },
   { id: 'in_progress', label: 'In Progress' },
+  { id: 'in_review', label: 'In Review' },
   { id: 'completed', label: 'Completed' },
 ]
 
@@ -119,6 +121,8 @@ export default function KanbanBoard({ orders, onOrderUpdated }: KanbanBoardProps
           ? 'Assign a technician first'
           : order.status === 'completed'
           ? 'Move to In Progress first — completed orders can only be reopened one step at a time'
+          : order.status === 'in_review'
+          ? 'Orders in review can only be approved to Completed or sent back to In Progress'
           : 'Orders must move one step at a time'
       )
       return

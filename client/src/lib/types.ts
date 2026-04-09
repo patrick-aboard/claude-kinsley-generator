@@ -1,4 +1,4 @@
-export type ServiceOrderStatus = 'open' | 'assigned' | 'in_progress' | 'completed'
+export type ServiceOrderStatus = 'open' | 'assigned' | 'in_progress' | 'in_review' | 'completed'
 export type PartsRequestStatus = 'requested' | 'approved' | 'delivered'
 export type LogEntryType = 'system' | 'status_change' | 'parts_request' | 'note'
 

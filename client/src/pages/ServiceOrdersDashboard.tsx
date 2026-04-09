@@ -25,6 +25,7 @@ const STATUS_TABS = [
   { value: 'open', label: 'Open' },
   { value: 'assigned', label: 'Assigned' },
   { value: 'in_progress', label: 'In Progress' },
+  { value: 'in_review', label: 'In Review' },
   { value: 'completed', label: 'Completed' },
 ] as const
 
@@ -45,6 +46,10 @@ const STATUS_BADGE: Record<
   in_progress: {
     label: 'In Progress',
     className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+  },
+  in_review: {
+    label: 'In Review',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
   },
   completed: {
     label: 'Completed',

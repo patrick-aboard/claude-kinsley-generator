@@ -76,9 +76,27 @@ db.prepare('INSERT INTO t VALUES ($name)').run({ $name: 'value' })
 **Auto-logging:** Backend creates `service_order_logs` entries inside transactions whenever status changes or parts requests are processed. Frontend never posts separate log entries for system events.
 
 **Status flows:**
-- Service orders: `open` → `assigned` → `in_progress` → `completed`
+- Service orders: `open` → `assigned` → `in_progress` → `in_review` → `completed`
 - Parts requests: `requested` → `approved` (decrements stock) → `delivered`
 - Generator status updates automatically when orders are created/completed
+
+## In Review Feature
+
+Service orders pass through an `in_review` step before completion. A reviewer inspects the work, then either approves (→ `completed`) or sends back (→ `in_progress`).
+
+**Transition rules** (enforced client-side in `client/src/components/KanbanBoard.tsx`):
+- `in_progress` → `in_review` only (no direct path to `completed`)
+- `in_review` → `completed` (approve) or `in_progress` (send back)
+
+**Review panel** (`client/src/pages/ServiceOrderDetail.tsx`): shown when `status === 'in_review'`. Displays parts used, work log, reviewer notes textarea, and Approve/Send Back buttons.
+
+**Sent-back banner**: shown when `status === 'in_progress'` and a recent `"Review feedback: "` log entry exists (not dismissed). Dismissible via X button (stores dismissed log ID in local state).
+
+**Log entry prefixes — do not change these strings** (the banner and review panel key off them):
+- `"Review feedback: "` — written on Send Back; detected by the sent-back banner
+- `"Review approved: "` — written on Approve (if reviewer left notes)
+
+**`load()` in ServiceOrderDetail must return its Promise** so that `await load()` after status transitions properly waits for fresh data before the UI updates.
 
 ## Branch Strategy
 

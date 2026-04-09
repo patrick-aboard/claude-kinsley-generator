@@ -9,6 +9,9 @@ import {
   MessageSquareIcon,
   ArrowRightIcon,
   WrenchIcon,
+  ClipboardCheckIcon,
+  TriangleAlertIcon,
+  XIcon,
 } from 'lucide-react'
 import {
   fetchServiceOrderDetail,
@@ -22,6 +25,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
@@ -53,6 +57,10 @@ const STATUS_BADGE: Record<ServiceOrderStatus, { label: string; className: strin
   in_progress: {
     label: 'In Progress',
     className: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800',
+  },
+  in_review: {
+    label: 'In Review',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-300 dark:border-purple-800',
   },
   completed: {
     label: 'Completed',
@@ -119,14 +127,21 @@ export default function ServiceOrderDetail() {
   // Status transition loading
   const [transitioning, setTransitioning] = useState(false)
 
+  // Review panel
+  const [reviewNotes, setReviewNotes] = useState('')
+  const [reviewing, setReviewing] = useState(false)
+
+  // Sent-back banner
+  const [dismissedFeedbackId, setDismissedFeedbackId] = useState<number | null>(null)
+
   // Parts row action loading
   const [partsActionId, setPartsActionId] = useState<number | null>(null)
 
   const noteInputRef = useRef<HTMLInputElement>(null)
 
   const load = () => {
-    if (!id) return
-    fetchServiceOrderDetail(id)
+    if (!id) return Promise.resolve()
+    return fetchServiceOrderDetail(id)
       .then(setOrder)
       .catch(() => toast.error('Failed to load service order'))
       .finally(() => setLoading(false))
@@ -209,6 +224,26 @@ export default function ServiceOrderDetail() {
     } finally {
       setAddingNote(false)
       noteInputRef.current?.focus()
+    }
+  }
+
+async function handleReviewAction(action: 'approve' | 'send_back') {
+    if (!order) return
+    setReviewing(true)
+    const newStatus: ServiceOrderStatus = action === 'approve' ? 'completed' : 'in_progress'
+    try {
+      if (reviewNotes.trim()) {
+        const prefix = action === 'approve' ? 'Review approved: ' : 'Review feedback: '
+        await addLogNote(order.id, prefix + reviewNotes.trim())
+      }
+      await updateServiceOrder(order.id, { status: newStatus })
+      setReviewNotes('')
+      await load()
+      toast.success(action === 'approve' ? 'Order approved and completed' : 'Order sent back for rework')
+    } catch {
+      toast.error('Failed to process review action')
+    } finally {
+      setReviewing(false)
     }
   }
 
@@ -299,11 +334,17 @@ export default function ServiceOrderDetail() {
               <Button
                 size="sm"
                 disabled={transitioning}
-                onClick={() => handleStatusTransition('completed')}
+                onClick={() => handleStatusTransition('in_review')}
               >
-                <CheckIcon className="size-3.5" />
-                Mark Complete
+                <ClipboardCheckIcon className="size-3.5" />
+                Submit for Review
               </Button>
+            )}
+            {order.status === 'in_review' && (
+              <span className="inline-flex items-center gap-1.5 text-sm text-purple-600 font-medium">
+                <ClipboardCheckIcon className="size-3.5" />
+                Pending Review
+              </span>
             )}
             {order.status === 'completed' && (
               <span className="inline-flex items-center gap-1.5 text-sm text-green-600 font-medium">
@@ -313,6 +354,115 @@ export default function ServiceOrderDetail() {
             )}
           </div>
         </div>
+
+        {/* Review panel */}
+        {order.status === 'in_review' && (
+          <div className="rounded-lg border border-purple-200 bg-purple-50/50 dark:border-purple-800 dark:bg-purple-950/20 space-y-4 p-4">
+            <div className="flex items-center gap-2">
+              <ClipboardCheckIcon className="size-4 text-purple-600 dark:text-purple-400" />
+              <h2 className="text-sm font-semibold text-purple-900 dark:text-purple-200">Pending Review</h2>
+            </div>
+
+            {/* Parts summary */}
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-purple-800/70 dark:text-purple-300/70 uppercase tracking-wide">Parts Used</p>
+              {order.parts_requests.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No parts requested.</p>
+              ) : (
+                <div className="space-y-1">
+                  {order.parts_requests.map(req => (
+                    <div key={req.id} className="flex items-center justify-between text-sm">
+                      <span>{req.part_name} <span className="text-muted-foreground">×{req.quantity_requested}</span></span>
+                      <Badge variant="outline" className={PARTS_STATUS_BADGE[req.status].className}>
+                        {PARTS_STATUS_BADGE[req.status].label}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Work log summary */}
+            <div className="space-y-1.5">
+              <p className="text-xs font-medium text-purple-800/70 dark:text-purple-300/70 uppercase tracking-wide">Work Log</p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {order.logs.map(entry => (
+                  <div key={entry.id} className="flex items-start gap-2 text-sm">
+                    <span className="text-muted-foreground shrink-0 text-xs mt-0.5">
+                      {format(new Date(entry.timestamp), 'MMM d h:mm a')}
+                    </span>
+                    <span className="text-foreground/80">{entry.message}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Reviewer notes */}
+            <div className="space-y-1.5">
+              <Label htmlFor="review-notes" className="text-xs font-medium text-purple-800/70 dark:text-purple-300/70 uppercase tracking-wide">
+                Reviewer Notes
+              </Label>
+              <Textarea
+                id="review-notes"
+                placeholder="Add feedback or notes for the technician..."
+                value={reviewNotes}
+                onChange={e => setReviewNotes(e.target.value)}
+                className="text-sm resize-none bg-white dark:bg-background"
+                rows={3}
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={reviewing}
+                onClick={() => handleReviewAction('send_back')}
+              >
+                Send Back for Rework
+              </Button>
+              <Button
+                size="sm"
+                disabled={reviewing}
+                onClick={() => handleReviewAction('approve')}
+              >
+                <CheckIcon className="size-3.5" />
+                Approve & Complete
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Sent-back banner */}
+        {order.status === 'in_progress' && (() => {
+          const feedback = order.logs.find(
+            l => l.message.startsWith('Review feedback: ') && l.id !== dismissedFeedbackId
+          )
+          if (!feedback) return null
+          return (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20 p-4 space-y-1.5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <TriangleAlertIcon className="size-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <h2 className="text-sm font-semibold text-amber-900 dark:text-amber-200">Sent Back for Rework</h2>
+                </div>
+                <Button
+                  size="icon-xs"
+                  variant="ghost"
+                  className="text-amber-600 hover:text-amber-900 hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                  onClick={() => setDismissedFeedbackId(feedback.id)}
+                  aria-label="Dismiss"
+                >
+                  <XIcon className="size-3.5" />
+                </Button>
+              </div>
+              <p className="text-sm text-amber-800 dark:text-amber-300 pl-6">
+                {feedback.message.replace('Review feedback: ', '')}
+              </p>
+            </div>
+          )
+        })()}
 
         {/* Generator info card */}
         <div className="rounded-lg border bg-muted/30 p-4 grid grid-cols-2 gap-x-8 gap-y-3 text-sm">
@@ -353,7 +503,7 @@ export default function ServiceOrderDetail() {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold">Parts Requests</h2>
-          {order.status !== 'completed' && (
+          {order.status !== 'completed' && order.status !== 'in_review' && (
             <Button
               size="sm"
               variant="outline"
@@ -445,7 +595,7 @@ export default function ServiceOrderDetail() {
         <h2 className="text-sm font-semibold">Activity</h2>
 
         {/* Add note */}
-        {order.status !== 'completed' && (
+        {order.status !== 'completed' && order.status !== 'in_review' && (
           <form onSubmit={handleAddNote} className="flex gap-2">
             <Input
               ref={noteInputRef}
